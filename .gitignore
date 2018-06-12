@@ -328,3 +328,7 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+/ServiceBusMessageReceiver/App.Debug.config
+/ServiceBusMessageReceiver/App.Release.config
+/ServiceBusDuplicateMessageSender/App.Debug.config
+/ServiceBusDuplicateMessageSender/App.Release.config

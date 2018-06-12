@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.WebJobs;
+﻿using System.Net;
+using Microsoft.Azure.WebJobs;
 
 namespace ServiceBusDuplicateMessageSender
 {
@@ -9,6 +10,8 @@ namespace ServiceBusDuplicateMessageSender
         // AzureWebJobsDashboard and AzureWebJobsStorage
         private static void Main()
         {
+            ServicePointManager.DefaultConnectionLimit = 100;
+
             var config = new JobHostConfiguration();
 
             if (config.IsDevelopment) config.UseDevelopmentSettings();

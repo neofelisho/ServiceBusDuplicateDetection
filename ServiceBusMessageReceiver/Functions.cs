@@ -1,18 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using log4net;
 using log4net.Config;
 using Microsoft.Azure.WebJobs;
+using Microsoft.ServiceBus.Messaging;
 
 namespace ServiceBusMessageReceiver
 {
     public class Functions
     {
-        private const string QueueAnnounce = "testing";
+        private const string QueueName = "testing";
+
         private static readonly Lazy<ILog> LazyLog = new Lazy<ILog>(() =>
         {
             var log = LogManager.GetLogger(typeof(Functions));
@@ -21,12 +18,30 @@ namespace ServiceBusMessageReceiver
         });
 
         private static readonly ILog Logger = LazyLog.Value;
-        public static void ProcessQueueMessage([ServiceBusTrigger(QueueAnnounce)] string queueMessage)
+
+        [Singleton("QueueLock", SingletonScope.Host)]
+        public static void ProcessQueueMessage([ServiceBusTrigger(QueueName)] BrokeredMessage queueMessage)
         {
-            if (!string.IsNullOrEmpty(queueMessage))
+            try
             {
-                Logger.Info($"Receive message at {DateTime.Now}: {queueMessage}.");
+                //var myMessage = JsonConvert.DeserializeObject<MyMessage>(queueMessage.GetBody<string>());
+                Logger.Info($"get body by MyMessage:{queueMessage.GetBody<string>()}");
             }
+            catch (Exception e)
+            {
+                Logger.Error(e.Message);
+            }
+        }
+    }
+
+    public class MyMessage
+    {
+        public string Content { get; set; }
+        public DateTime ScheduleTime { get; set; }
+
+        public override string ToString()
+        {
+            return Content;
         }
     }
 }

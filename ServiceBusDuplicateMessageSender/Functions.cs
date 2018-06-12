@@ -1,20 +1,24 @@
 ﻿using System;
 using System.Configuration;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using log4net;
 using log4net.Config;
-using Microsoft.Azure.ServiceBus;
+using Microsoft.ServiceBus.Messaging;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
+using Newtonsoft.Json;
 using StackExchange.Redis;
 
 namespace ServiceBusDuplicateMessageSender
 {
     public class Functions
     {
-        private const string QueueAnnounce = "testing";
-        private const string KeyAnnounce = "job:testing";
+        private const string QueueName = "testing";
+        private const string RedisKeyPrefix = "job:testing";
 
         private static readonly string RedisConnectionString =
             ConfigurationManager.ConnectionStrings["RedisConnection"]?.ConnectionString;
@@ -45,58 +49,70 @@ namespace ServiceBusDuplicateMessageSender
         {
             if (string.IsNullOrEmpty(ServiceBusConnectionString))
                 throw new Exception("Service bus connection string is missing.");
-            return new QueueClient(ServiceBusConnectionString, QueueAnnounce);
+            return QueueClient.CreateFromConnectionString(ServiceBusConnectionString, QueueName);
         });
 
         private static readonly QueueClient QueueClient = LazyQueueClient.Value;
 
-        public static async Task EnqueueMessageToAzureServiceBus([TimerTrigger("0 0 * * * *", RunOnStartup = true)]
+        public static void EnqueueMessageToAzureServiceBus([TimerTrigger("0 0 * * * *", RunOnStartup = true)]
             TimerInfo myTimer)
         {
             var currentMinute = new DateTime(2018, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, 0, 0);
 
-            for (var i = 1; i <= 12; i++)
+            Enumerable.Range(1, 60).AsParallel().ForAll(async i => { await Genereate(currentMinute, i); });
+
+        }
+
+        private static async Task Genereate(DateTime baseTime, int i)
+        {
+            var scheduleTime = baseTime.AddMinutes(i);
+            if (scheduleTime < DateTime.Now) return;
+
+            var scheduleUtc = new DateTimeOffset(scheduleTime.ToUniversalTime());
+
+            //var message = new BrokeredMessage(JsonConvert.SerializeObject(myMessage))
+            //{
+            //    MessageId = scheduleUtc.ToUnixTimeSeconds().ToString(),
+            //    ContentType = "application/json"
+            //};
+            var message = new BrokeredMessage($"Scheduled at {scheduleTime}.")
             {
-                var scheduleTime = currentMinute.AddMinutes(i * 10);
-                if (scheduleTime < DateTime.Now) continue;
-
-                var scheduleUtc = new DateTimeOffset(scheduleTime.ToUniversalTime());
-                var message = new Message(Encoding.UTF8.GetBytes($"Scheduled at {scheduleTime}."))
+                MessageId = scheduleUtc.ToUnixTimeSeconds().ToString(),
+            };
+            var redisKey = $"{RedisKeyPrefix}:{message.MessageId}";
+            var oldValue = RedisDb.StringGet(redisKey);
+            try
+            {
+                if (!oldValue.IsNullOrEmpty)
                 {
-                    MessageId = scheduleUtc.ToUnixTimeSeconds().ToString()
-                };
-                var redisKey = $"{KeyAnnounce}:{message.MessageId}";
-                var oldValue = RedisDb.StringGet(redisKey);
-                try
-                {
-                    if (!oldValue.IsNullOrEmpty)
-                    {
-                        Logger.Info($"Cancel scheduled message: {message}:{oldValue}.");
-                        await QueueClient.CancelScheduledMessageAsync(long.Parse(oldValue.ToString()));
-                    }
-                }
-                catch (Exception e)
-                {
-                    Logger.Error($"Cancel scheduled message failed: {message}.");
-                    Logger.Error(e.Message);
-                    continue;
-                }
-
-                try
-                {
-                    var sequenceNumber = await QueueClient.ScheduleMessageAsync(message, scheduleUtc);
-                    var newValue = $"{sequenceNumber}";
-                    Logger.Info(oldValue.IsNullOrEmpty
-                        ? $"Enqueue at {scheduleTime}: {message}."
-                        : $"Update schedule to {scheduleTime}: {message}.");
-                    await RedisDb.StringSetAsync(redisKey, newValue, scheduleTime.Subtract(DateTime.Now));
-                }
-                catch (Exception e)
-                {
-                    Logger.Error($"Enqueue scheduled message failed: {message}");
-                    Logger.Error(e.Message);
+                    await QueueClient.CancelScheduledMessageAsync(long.Parse(oldValue.ToString()));
                 }
             }
+            catch (Exception e)
+            {
+                Logger.Error($"Cancel scheduled message failed: {message}.");
+                Logger.Error(e.Message);
+                return;
+            }
+
+            try
+            {
+                var sequenceNumber = await QueueClient.ScheduleMessageAsync(message, scheduleUtc);
+                var newValue = $"{sequenceNumber}";
+                await RedisDb.StringSetAsync(redisKey, newValue, scheduleTime.Subtract(DateTime.Now));
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Enqueue scheduled message failed: {message}");
+                Logger.Error(e.Message);
+            }
         }
+    }
+
+
+    public class MyMessage
+    {
+        public string Content { get; set; }
+        public DateTime ScheduleTime { get; set; }
     }
 }
