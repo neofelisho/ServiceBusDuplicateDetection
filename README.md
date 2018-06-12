@@ -1,17 +1,21 @@
 # ServiceBusDuplicateDetection
-###### tags: `Azure` `WebJobs` `Service Bus` `Redis` `Duplicate Detection` `Cron`
-`Problem:` ¦b¥Ø«e³B²zªº¨t²Î¤¤¡A¦]¬°¤u§@±Æµ{ªº®É¶¡·|¨ü¨ì¨ä¥¦¦]¯À¦Ó§ó°Ê¡A©Ò¥H¨C¦¸°õ¦æ±Æµ{³£·|¦³³¡¥÷¬O­«½Æªº¤u§@¡A¦]¬°®É¶¡­Y¦³²§°Ê»İ­n¥H·sªº¬°¥D¡A©M Service Bus duplicat detection ªº¾÷¨î¬O¬Û¤Ïªº¡C
+###### tags: `Azure` `WebJobs` `Service Bus` `Redis` `Duplicate Detection` `Cron` `Abadon` `Sequence Number`
+`Problem:` åœ¨ç›®å‰è™•ç†çš„ç³»çµ±ä¸­ï¼Œå› ç‚ºå·¥ä½œæ’ç¨‹çš„æ™‚é–“æœƒå—åˆ°å…¶å®ƒå› ç´ è€Œæ›´å‹•ï¼Œæ‰€ä»¥æ¯æ¬¡åŸ·è¡Œæ’ç¨‹éƒ½æœƒæœ‰éƒ¨ä»½æ˜¯é‡è¤‡çš„å·¥ä½œï¼Œå› ç‚ºæ™‚é–“è‹¥æœ‰ç•°å‹•éœ€è¦ä»¥æ–°çš„ç‚ºä¸»ï¼Œå’Œ Service Bus duplicat detection çš„æ©Ÿåˆ¶æ˜¯ç›¸åçš„ã€‚
 
-`Test:`
+`Project:`
 - ServiceBusDuplicateMessageSender:
-    - ³o¬O¤@­Ó WebJob ±M®×¡A¤]¬O¥»´ú¸Õªº¥DÅé¡C¨Ì·Ó±Æµ{¦b¨C­Ó¤p®Éªº¾ãÂI°õ¦æ¡A·|±Æµ{¥¼¨Ó¨â¤p®Éªº¤u§@¡A¬G¨C¦¸°õ¦æ·|¦³¤@¤p®Éªº¤u§@±Æµ{¬O­«½Æªº¡C
-    - ¨Ï¥Î WebJobs SDK ¶i¦æ cron ªº±Æµ{¡C
-    - ±N°T®§ enqueue ¦Ü Service Bus «á¡A¨Ï¥Î Redis ¼È¦s sequence number ¥H§Q¤U¦¸±Æµ{³B²z­«½Æ°T®§¡C
-    - ¨Ï¥Î slack4net ·í°µ console monitor¡C
+    - é€™æ˜¯ä¸€å€‹ WebJob å°ˆæ¡ˆï¼Œä¹Ÿæ˜¯æœ¬æ¸¬è©¦çš„ä¸»é«”ã€‚ä¾ç…§æ’ç¨‹åœ¨æ¯å€‹å°æ™‚çš„æ•´é»åŸ·è¡Œï¼Œæœƒæ’ç¨‹æœªä¾†å…©å°æ™‚çš„å·¥ä½œï¼Œæ•…æ¯æ¬¡åŸ·è¡Œæœƒæœ‰ä¸€å°æ™‚çš„å·¥ä½œæ’ç¨‹æ˜¯é‡è¤‡çš„ã€‚
+    - ä½¿ç”¨ WebJobs SDK é€²è¡Œ cron çš„æ’ç¨‹ã€‚
+    - å°‡è¨Šæ¯ enqueue è‡³ Service Bus å¾Œï¼Œä½¿ç”¨ Redis æš«å­˜ sequence numberã€message id ä»¥åŠæ’ç¨‹çš„æ™‚é–“ï¼Œä»¥åˆ©ä¸‹æ¬¡æ’ç¨‹è™•ç†æ±ºå®šæ˜¯å¦è¦æ›´æ–°è¨Šæ¯å…§å®¹ã€‚
+    - ä½¿ç”¨ slack4net ç•¶åš console monitorã€‚
 
 - ServiceBusMessageReceiver:
-    - ³o¬O¤@­Ó WebJob ±M®×¡A¥D­n¬O¥Î¨ÓÆ[¹î­«½Æ¤u§@±Æµ{ªº¥¿½T©Ê¡C
-    - ¨Ï¥Î Service Bus Trigger ¨Ó±µ¦¬°T®§¡C
-    - ¨Ï¥Î slack4net ·í°µ console monitor¡C
+    - é€™æ˜¯ä¸€å€‹ WebJob å°ˆæ¡ˆï¼Œä¸»è¦æ˜¯ç”¨ä¾†è§€å¯Ÿé‡è¤‡å·¥ä½œæ’ç¨‹çš„æ­£ç¢ºæ€§ã€‚
+    - ä½¿ç”¨ Service Bus Trigger ä¾†æ¥æ”¶è¨Šæ¯ã€‚
+    - ä½¿ç”¨ slack4net ç•¶åš console monitorã€‚
 
-`Solution:` ¬İ°_¨Ó¹B§@¨}¦n¡C
+`Test:` 
+- ä½¿ç”¨ BrokerMessage å¯ä»¥æ¯”è¼ƒæ–¹ä¾¿èª¿ç”¨ .Abadon å»¶ä¼¸æ–¹æ³•
+- ä½¿ç”¨ string ç•¶åš message bodyï¼Œè‹¥éœ€è¦å‚³éç‰©ä»¶ï¼Œå¯ä»¥å…ˆç”¨ JsonConverter åºåˆ—åŒ–å¾Œï¼Œæ”¾é€² BrokerMessage æœƒæ¯”è¼ƒå¥½è™•ç†ã€‚
+- è¦å¾ˆæ³¨æ„ç¨‹å¼çš„æ­£ç¢ºæ€§ï¼Œè‹¥æœ‰æœªè™•ç†çš„ exceptionï¼Œmessage æœƒä¸æ–·åœ° enqueue å°è‡´æ•ˆèƒ½å•é¡Œã€‚
+- Azure Service Bus æ”¯æ´é«˜ä½µç™¼ (concurrent) çš„æ¨¡å¼ï¼Œå¯ä»¥ä½¿ç”¨ AsParallel ç„¶å¾Œå¹³è¡Œ Enqueueï¼Œå¯ä»¥ç¯€çœå¾ˆå¤šæ™‚é–“ã€‚
